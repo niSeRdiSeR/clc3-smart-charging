@@ -4,15 +4,23 @@ import json
 import requests
 import psycopg2
 import sqlalchemy
+from datetime import datetime
 from google.cloud import pubsub_v1
 from google.cloud import secretmanager
+import influxdb_client
+from influxdb_client.domain.write_precision import WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 
 PROJECT_ID = os.getenv('GCLOUD_PROJECT')
 DB_INSTANCE_CONN_NAME = os.getenv('DB_INSTANCE_CONN_NAME')
 DB_NAME = os.getenv('DB_NAME')
 TARGET_TOPIC = os.getenv('TARGET_TOPIC')
 DB_SECRET_NAME = os.getenv('DB_SECRET_NAME')
+INFLUX_SECRET_NAME = os.getenv('INFLUX_SECRET_NAME')
 API_BASE = 'https://monitoringapi.solaredge.com'
+INFLUX_URL = os.getenv('INFLUX_HOST')
+BUCKET = os.getenv('INFLUX_BUCKET') 
+ORG = os.getenv('INFLUX_ORG') 
 
 def fetch_powerflow(site_id, token):
     url = f"{API_BASE}/site/{site_id}/currentPowerFlow"
@@ -38,7 +46,6 @@ def handle(event, context):
     print(pubsub_message)
 
     client = secretmanager.SecretManagerServiceClient()
-    settings_name = os.environ.get("SETTINGS_NAME", "django_settings")
     name = f"projects/{PROJECT_ID}/secrets/{DB_SECRET_NAME}/versions/latest"
     payload = json.loads(client.access_secret_version(name=name).payload.data.decode("utf-8"))
     db_user = payload['user']
@@ -49,6 +56,12 @@ def handle(event, context):
 
     topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
     topic_strings = [t.name for t in publisher.list_topics(request={"project": project_path})]
+
+    name = f"projects/{PROJECT_ID}/secrets/{INFLUX_SECRET_NAME}/versions/latest"
+    token = client.access_secret_version(name=name).payload.data.decode("utf-8")
+    
+    influx_client = influxdb_client.InfluxDBClient(url=INFLUX_URL, token=token, org=ORG)
+    write_api = influx_client.write_api(write_options=SYNCHRONOUS)
 
     if topic_path not in topic_strings:
         publisher.create_topic(request={"name": topic_path})
@@ -65,5 +78,9 @@ def handle(event, context):
             try:
                 prod, cons, from_grid = fetch_powerflow(site_id, token)
                 publisher.publish(topic_path, json.dumps({"pk": pk, "wp_pk": wp_pk, "production": prod, "consumption": cons, "from_grid": from_grid}).encode('utf-8'))
+                # write to influx
+                p = influxdb_client.Point("inverter_updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
+                write_api.write(bucket=BUCKET, org=ORG, record=p)
             except:
-                print(f"error fetching: {pk}, {site_id}")
+                print(f"error fetching: {pk}, {site_id}")            
+
