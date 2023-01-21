@@ -73,11 +73,13 @@ def handle(event, context):
             pk = row[0]
             token = row[1]
             site_id = row[2]
-            wp_rows = conn.execute(f'SELECT id FROM management_wattpilot WHERE inverter_id={pk}')
-            wp_pk = wp_rows.fetchone()[0] if wp_rows.rowcount > 0 else None
+            wp_rows = conn.execute(f'SELECT id, smart_charging_enabled FROM management_wattpilot WHERE inverter_id={pk}')
+            entry = wp_rows.fetchone() if wp_rows.rowcount > 0 else None
+            wp_pk = entry[0] if entry else None
+            smart_charging_enabled = entry[1] if entry else None
             try:
                 prod, cons, from_grid = fetch_powerflow(site_id, token)
-                publisher.publish(topic_path, json.dumps({"pk": pk, "wp_pk": wp_pk, "production": prod, "consumption": cons, "from_grid": from_grid}).encode('utf-8'))
+                publisher.publish(topic_path, json.dumps({"pk": pk, "wp_pk": wp_pk, "smart_charging_enabled": smart_charging_enabled, "production": prod, "consumption": cons, "from_grid": from_grid}).encode('utf-8'))
                 # write to influx
                 p = influxdb_client.Point("inverter_updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
                 write_api.write(bucket=BUCKET, org=ORG, record=p)

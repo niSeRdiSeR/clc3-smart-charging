@@ -6,10 +6,16 @@ import redis
 from google.cloud import pubsub_v1
 
 PROJECT_ID = os.getenv('GCLOUD_PROJECT')
-#INVERTER_SRC_TOPIC = os.getenv('INVERTER_SRC_TOPIC')
-#WATTPILOT_SRC_TOPIC = os.getenv('WATTPILOT_SRC_TOPIC')
 TARGET_TOPIC = os.getenv('TARGET_TOPIC')
 REDIS_HOST = os.getenv('REDIS_HOST')
+TOPIC_PATH = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
+C_233 = 233.333333
+
+publisher = pubsub_v1.PublisherClient()
+
+def set_prop(pk, prop, val):
+    publisher.publish(TOPIC_PATH, json.dumps({"pk": wp_pk, "prop": prop:, "val": val}))
+
 
 def handle(event, context):
     """Triggered from a message on a Cloud Pub/Sub topic.
@@ -24,38 +30,61 @@ def handle(event, context):
 
     print(f"processing: {pubsub_message} @ {src_topic}")
 
-
-    project_path = f"projects/{PROJECT_ID}"
-    publisher = pubsub_v1.PublisherClient()
-
-    topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
-    topic_strings = [t.name for t in publisher.list_topics(request={"project": project_path})]
-
-    if topic_path not in topic_strings:
-        publisher.create_topic(request={"name": topic_path})
-    
-    #if WATTPILOT_SRC_TOPIC in src_topic:
-        
-        #r.hset(message_json['pk'], message_json['value'])
-    #elif INVERTER_SRC_TOPIC in src_topic:
     pk = message_json.pop('pk')
     if message_json['wp_pk'] is None:
         del message_json['wp_pk']
-    r.hset(f"inv-{pk}", mapping=message_json)
-    print(r.hgetall(f"inv-{pk}"))
+        r.hdel(f"inv-{pk}")
+    #r.hset(f"inv-{pk}", mapping=message_json)
+    #print(r.hgetall(f"inv-{pk}"))
 
     wp_pk = message_json.get('wp_pk', None)
+    smart_charging_enabled = message_json.get('smart_charging_enabled', None)
 
     if wp_pk:
+        print("====================")
         print(f"found reg. wp {wp_pk}")
         # create link in wp hashdict
         r.hset(f"wp-{wp_pk}", "inv", pk)
         wp_dict = r.hgetall(f"wp-{pk}")
-        if not wp_dict.get("smart_charging_enabled"):
+        if not smart_charging_enabled:
             print("sc not enabled for attached wp or key not found")
         else:
             # logic processing
             print("sc enabled, applying logic")
-            
+            delta_kw = message_json['production'] - message_json['consumption']
+            nrg_total_w = r.hget(f"wp-{wp_pk}", "nrg_total")
+            target_kw = nrg_total_w / 1000 + delta_kw if nrg_total_w else delta_kw
+            if target_kw < 1:
+                # switch off WP
+                print(f"{wp_pk}: target power < 1 kW -> deny charging attempts")
+                set_prop(wp_pk, "frc", 1)
+            else:
+                set_prop(wp_pk, "frc", 0)
+                if target_kw < 3.77:
+                    psm = 1
+                    # 1-phase
+                    amps = round(target_kw*1000/C_233)
+                    if amps < 6:
+                        print(f"{wp_pk}: requested less than 6 amps (1-phase)")
+                        amps = 6
+                    elif amps > 16:
+                        print(f"{wp_pk}: requested more than 16 amps on (1-phase)!")
+                        amps = 16
+                    set_prop(wp_pk, "psm", psm) # 1-phase
+                    set_prop(wp_pk, "amp", amps)
+                else:
+                    # 3-phase
+                    psm = 0
+                    amps = round(target_kw*1000/(400*1.73))
+                    if amps < 6:
+                        print(f"{wp_pk}: requested less than 6 amps (3-phase)")
+                        amps = 6
+                    elif amps > 16:
+                        print(f"{wp_pk}: requested more than 16 amps (3-phase)")
+                        amps = 16
+                    set_prop(wp_pk, "psm", psm) # auto
+                    set_prop(wp_pk, "amp", amps)
+                print(f"{wp_pk}: target power > 1 kW -> allow charging ({amps}A; {psm}PSM)")
+        print("====================")
     else:
         print("found no reg. wp")
