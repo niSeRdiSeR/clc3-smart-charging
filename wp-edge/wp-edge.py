@@ -44,6 +44,8 @@ mqtt_client.on_message=mqtt_msg_handler
 
 try:
     mqtt_client.connect(MQTT_IP)
+    mqtt_client.loop_start()
+
 except:
     print(f"Couldn't connect with mqtt @ {MQTT_IP}")
 
