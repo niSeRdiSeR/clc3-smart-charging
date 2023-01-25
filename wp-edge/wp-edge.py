@@ -34,7 +34,7 @@ def mqtt_msg_handler(client, userdata, message):
     print("MSG!")
     topic_list = message.topic.split('/')
     if 'properties' in topic_list[1]:
-        prop = topic_list[3]
+        prop = topic_list[2]
     elif 'available' in topic_list[1]:
         prop = 'available'
     val = str(message.payload.decode("utf-8"))
