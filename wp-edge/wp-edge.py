@@ -71,9 +71,18 @@ def sub_msg_handler(msg):
         mqtt_client.publish(f"wattpilot/properties/{msg_json['prop']}/set", msg_json['val'], qos=1)
 
 try:
-    subscription_name = f'projects/{PROJECT_ID}/subscriptions/wp-edge-sub'
-#    subscriber.create_subscription(
-#        name=subscription_name, topic=sub_topic_name)
+    subscription_name = f'projects/{PROJECT_ID}/subscriptions/wp-edge-{WP_PK}-sub'
+    project_path = f"projects/{PROJECT_ID}"
+    for subscription in publisher.list_topic_subscriptions(request={"project": project_path}, topic=SUB_TOPIC):
+        print(dir(subscription))
+        if f'wattpilot-edge-client-{WP_PK}' in subscription.name:
+            print("topic exists! skipping...")
+            break
+    else:
+        print("topic missing!")
+        # create new sub
+        subscriber.create_subscription(request={"name": subscription_path, "topic": SUB_TOPIC})
+        subscriber.subscription_path(PROJECT_ID, subscription_id)
     future = subscriber.subscribe(subscription_name, sub_msg_handler)
 #    try:
 #        print("blocking")
