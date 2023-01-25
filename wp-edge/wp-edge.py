@@ -66,7 +66,7 @@ mqtt_client.loop_start()
 print("loop up")
 
 def sub_msg_handler(msg):
-    msg_json = json.loads(msg)
+    msg_json = json.loads(msg.data)
     print(msg_json)
     if msg_json['pk'] == WP_PK:
         mqtt_client.publish(f"wattpilot/properties/{msg_json['prop']}/set", msg_json['val'], qos=1)
