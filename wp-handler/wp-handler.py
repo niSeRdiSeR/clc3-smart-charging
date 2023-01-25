@@ -3,7 +3,7 @@ import os
 import json
 import requests
 import redis
-from dateutil import parser
+from datetime import datetime
 from google.cloud import secretmanager
 import influxdb_client
 from influxdb_client.domain.write_precision import WritePrecision
@@ -29,13 +29,14 @@ def handle(event, context):
 
     # parsing
     print(f"processing: {pubsub_message} @ {src_topic}")
-    dt = parser.isoparse(context.timestamp)
     pubsub_message = base64.b64decode(event['data']).decode('utf-8')
     message_json = json.loads(pubsub_message)
     src_topic = context.resource['name']
     pk = message_json.pop('pk')
+    dt = datetime.fromtimestamp(message_json['timestamp'])
 
     # redis
+    r.hset(f"wp-{pk}", message_json['prop'], message_json['val'])
     r.hset(f"wp-{pk}", message_json['prop'], message_json['val'])
     print(r.hgetall(f"wp-{pk}"))
 

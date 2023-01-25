@@ -1,5 +1,6 @@
 import sys
 import paho.mqtt.client as mqtt
+from datetime import datetime
 
 WP_PK = os.getenv('WP_PK', None)
 PROJECT_ID = os.getenv('GCLOUD_PROJECT', None)
@@ -21,11 +22,23 @@ sub_topic_name = f'projects/{PROJECT_ID}/topics/{SUB_TOPIC}'
 pub_topic_name = f'projects/{PROJECT_ID}/topics/{PUB_TOPIC}',
 
 def mqtt_msg_handler(client, userdata, message):
-    prop = message.topic.split('/')[-2]
-    val = int(message.payload.decode("utf-8"))
-    publisher.publish(pub_topic_name, json.dumps({"pk": WP_PK, "prop": prop, "val": val}))
+    topic_list = message.topic.split('/')
+    if 'properties' in topic_list[1]:
+        prop = topic_list[3]
+    elif 'available' in topic_list[1]:
+        prop = 'available'
+    val = str(message.payload.decode("utf-8"))
+    publisher.publish(pub_topic_name, json.dumps({"pk": WP_PK, "prop": prop, "val": val, "timestamp": datetime.utcnow().timestamp()}))
 
-mqtt_client.subscribe("wattpilot/properties/nrg_ptotal/state") # float
+mqtt_client.subscribe("wattpilot/properties/nrg_ptotal/state", qos=1) # float
+mqtt_client.subscribe("wattpilot/properties/psm/state", qos=1) # int
+mqtt_client.subscribe("wattpilot/properties/frc/state", qos=1) # int
+mqtt_client.subscribe("wattpilot/properties/amp/state", qos=1) # int
+mqtt_client.subscribe("wattpilot/properties/car/state", qos=1) # string
+mqtt_client.subscribe("wattpilot/properties/wh/state", qos=1) # float
+mqtt_client.subscribe("wattpilot/properties/wh/state", qos=1) # float
+mqtt_client.subscribe("wattpilot/available", qos=1) # online/offline
+
 mqtt_client.on_message=mqtt_msg_handler
 
 try:

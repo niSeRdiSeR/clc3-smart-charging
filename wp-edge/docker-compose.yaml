@@ -1,0 +1,37 @@
+version: "3.8"
+networks:
+  edgenet:
+    ipam:
+      config:
+        - subnet: 10.5.0.0/24
+
+services:
+  mosquitto:
+    restart: unless-stopped
+    image: eclipse-mosquitto
+    user: "1000:1000"
+    volumes:
+      - ./mqtt/config/:/mosquitto/config/
+      - ./mqtt/log/:/mosquitto/log/
+      - ./mqtt/data:/mosquitto/data/
+    ports:
+      - 1883:1883
+      - 9001:9001
+#    entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      edgenet:
+        ipv4_address: 10.5.0.2
+
+  wattpilot-bridge:
+    image: wattpilot-adapted
+#    build:
+#      context: .
+    env_file: .env
+    command: server
+ #  ä entrypoint: "sh /entrypoint.sh server"
+    restart: unless-stopped
+    #volumes:
+    #  - ./wattpilot-bridge/ressources/:/src/src/wattpilot/ressources/
+    networks:
+      edgenet:
+        ipv4_address: 10.5.0.3

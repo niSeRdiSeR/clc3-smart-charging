@@ -52,7 +52,7 @@ def handle(event, context):
             # logic processing
             print("sc enabled, applying logic")
             delta_kw = message_json['production'] - message_json['consumption']
-            nrg_total_w = r.hget(f"wp-{wp_pk}", "nrg_total")
+            nrg_total_w = int(r.hget(f"wp-{wp_pk}", "nrg_total"))
             target_kw = nrg_total_w / 1000 + delta_kw if nrg_total_w else delta_kw
             if target_kw < 1:
                 # switch off WP
