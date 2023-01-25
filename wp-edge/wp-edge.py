@@ -21,9 +21,10 @@ mqtt_client = mqtt.Client("wp-edge")
 subscriber = pubsub_v1.SubscriberClient()
 publisher = pubsub_v1.PublisherClient()
 
-sub_topic_name = f'projects/{PROJECT_ID}/topics/{SUB_TOPIC}'
-
-pub_topic_name = f'projects/{PROJECT_ID}/topics/{PUB_TOPIC}',
+sub_topic_name = subscriber.topic_path(PROJECT_ID, SUB_TOPIC)
+print(sub_topic_name)
+pub_topic_name = publisher.topic_path(PROJECT_ID, PUB_TOPIC)
+print(pub_topic_name)
 
 
 last_vals = {}
