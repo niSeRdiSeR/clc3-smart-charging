@@ -3,8 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.db
+
 # C extensions
 *.so
+
+gcloud_key.json
 
 # Distribution / packaging
 .Python

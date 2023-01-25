@@ -40,6 +40,8 @@ services:
     build:
       context: .
     env_file: .env
+    volumes:
+      - ./gcloud_key.json:/gcloud_key.json
     restart: unless-stopped
     networks:
       edgenet:

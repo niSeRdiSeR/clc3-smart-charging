@@ -51,7 +51,7 @@ except:
 
 def sub_msg_handler(msg):
     msg_json = json.loads(msg)
-    if msg_json['pk'] = WP_PK:
+    if msg_json['pk'] == WP_PK:
         mqtt_client.publish(f"wattpilot/properties/{msg_json['prop']}/set", msg_json['val'], qos=1)
 
 try:
