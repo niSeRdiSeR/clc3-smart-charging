@@ -73,6 +73,7 @@ def sub_msg_handler(msg):
 try:
     subscription_name = f'projects/{PROJECT_ID}/subscriptions/wp-edge-{WP_PK}-sub'
     project_path = f"projects/{PROJECT_ID}"
+    print(publisher.list_topic_subscriptions(request={"project": project_path}, topic=SUB_TOPIC))
     for subscription in publisher.list_topic_subscriptions(request={"project": project_path}, topic=SUB_TOPIC):
         print(dir(subscription))
         if f'wattpilot-edge-client-{WP_PK}' in subscription.name:
@@ -90,7 +91,8 @@ try:
 #    except KeyboardInterrupt:
 #        print("canceled!")
 #        future.cancel()
-except:
+except Exception as e:
+    print(e)
     print(f"Couldn't subscribe to pub/sub with '{subscription_name}' @ {sub_topic_name}")
 
 while True:
