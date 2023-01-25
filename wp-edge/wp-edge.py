@@ -70,6 +70,7 @@ def sub_msg_handler(msg):
     print(msg_json)
     if msg_json['pk'] == WP_PK:
         mqtt_client.publish(f"wattpilot/properties/{msg_json['prop']}/set", msg_json['val'], qos=1)
+    msg.ack()
 
 try:
     subscription_name = f'projects/{PROJECT_ID}/subscriptions/wp-edge-{WP_PK}T-sub'
