@@ -1,6 +1,7 @@
 import sys
 import paho.mqtt.client as mqtt
 from datetime import datetime
+from google.cloud import pubsub_v1
 
 WP_PK = os.getenv('WP_PK', None)
 PROJECT_ID = os.getenv('GCLOUD_PROJECT', None)
