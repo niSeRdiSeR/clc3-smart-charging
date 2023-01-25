@@ -7,7 +7,7 @@ WP_PK = os.getenv('WP_PK', None)
 PROJECT_ID = os.getenv('GCLOUD_PROJECT', None)
 SUB_TOPIC = os.getenv('SUB_TOPIC', None)
 PUB_TOPIC = os.getenv('PUB_TOPIC', None)
-MQTT_IP = os.getenv('MQTT_IP', None)
+MQTT_IP = os.getenv('MQTT_HOST', None)
 
 if WP_PK is None:
     sys.exit("env variable 'WP_PK' not set")
