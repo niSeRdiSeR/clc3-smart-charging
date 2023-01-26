@@ -1,7 +1,6 @@
 import base64
 import os
 import json
-import requests
 import redis
 from google.cloud import pubsub_v1
 
@@ -9,12 +8,18 @@ PROJECT_ID = os.getenv('GCLOUD_PROJECT')
 TARGET_TOPIC = os.getenv('TARGET_TOPIC')
 REDIS_HOST = os.getenv('REDIS_HOST')
 C_233 = 233.333333
+MAX_AMPS = 16
+MIN_AMPS = 6
+
 
 publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
 
 def set_prop(pk, prop, val):
-    publisher.publish(topic_path, json.dumps({"pk": pk, "prop": prop, "val": val}).encode('utf-8'), pk=f"{pk}")
+    print("sending...")
+    data = json.dumps({"pk": pk, "prop": prop, "val": val})
+    publisher.publish(topic_path, data.encode('utf-8'), pk=f"{pk}")
+    print(f"sent: {data.encode('utf-8')}")
 
 
 def handle(event, context):
@@ -47,7 +52,10 @@ def handle(event, context):
         r.hset(f"wp-{wp_pk}", "inv", pk)
         wp_dict = r.hgetall(f"wp-{pk}")
         if not smart_charging_enabled:
-            print("sc not enabled for attached wp or key not found")
+            print("sc not enabled -> allow max power")
+            set_prop(wp_pk, "frc", 0) # auto
+            set_prop(wp_pk, "psm", 0) # auto
+            set_prop(wp_pk, "amp", MAX_AMPS)
         else:
             # logic processing
             print("sc enabled, applying logic")
@@ -67,24 +75,24 @@ def handle(event, context):
                     psm = 1
                     # 1-phase
                     amps = round(target_kw*1000/C_233)
-                    if amps < 6:
-                        print(f"{wp_pk}: requested less than 6 amps (1-phase)")
-                        amps = 6
-                    elif amps > 16:
-                        print(f"{wp_pk}: requested more than 16 amps on (1-phase)!")
-                        amps = 16
+                    if amps < MIN_AMPS:
+                        print(f"{wp_pk}: requested less than {MIN_AMPS} amps (1-phase)")
+                        amps = MIN_AMPS
+                    elif amps > MAX_AMPS:
+                        print(f"{wp_pk}: requested more than {MAX_AMPS} amps on (1-phase)!")
+                        amps = MAX_AMPS
                     set_prop(wp_pk, "psm", psm) # 1-phase
                     set_prop(wp_pk, "amp", amps)
                 else:
                     # 3-phase
                     psm = 0
                     amps = round(target_kw*1000/(400*1.73))
-                    if amps < 6:
-                        print(f"{wp_pk}: requested less than 6 amps (3-phase)")
-                        amps = 6
-                    elif amps > 16:
-                        print(f"{wp_pk}: requested more than 16 amps (3-phase)")
-                        amps = 16
+                    if amps < MIN_AMPS:
+                        print(f"{wp_pk}: requested less than {MIN_AMPS} amps (3-phase)")
+                        amps = MIN_AMPS
+                    elif amps > MAX_AMPS:
+                        print(f"{wp_pk}: requested more than {MAX_AMPS} amps (3-phase)")
+                        amps = MAX_AMPS
                     set_prop(wp_pk, "psm", psm) # auto
                     set_prop(wp_pk, "amp", amps)
                 print(f"{wp_pk}: target power > 1 kW -> allow charging ({amps}A; {psm}PSM)")
