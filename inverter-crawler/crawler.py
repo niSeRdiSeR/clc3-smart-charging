@@ -81,7 +81,7 @@ def handle(event, context):
                 prod, cons, from_grid = fetch_powerflow(site_id, token)
                 publisher.publish(topic_path, json.dumps({"pk": pk, "wp_pk": wp_pk, "smart_charging_enabled": smart_charging_enabled, "production": prod, "consumption": cons, "from_grid": from_grid}).encode('utf-8'))
                 # write to influx
-                p = influxdb_client.Point("inverter_updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
+                p = influxdb_client.Point("inverter-updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
                 write_api.write(bucket=BUCKET, org=ORG, record=p)
             except:
                 print(f"error fetching: {pk}, {site_id}")            

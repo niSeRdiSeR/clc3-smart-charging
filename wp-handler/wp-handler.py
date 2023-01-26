@@ -46,8 +46,11 @@ def handle(event, context):
     write_api = influx_client.write_api(write_options=SYNCHRONOUS)
     # write to influx
     try:
-        val = int(message_json["val"])
+        val = float(message_json["val"])
     except:
-        val = str(message_json["val"])
-    p = influxdb_client.Point("wattpilot_updates").tag("wp", pk).field(message_json["prop"], val).time(dt, write_precision=WritePrecision.S)
+        try:
+            val = int(message_json["val"])
+        except:
+            val = str(message_json["val"])
+    p = influxdb_client.Point("wattpilot-updates").tag("wp", pk).field(message_json["prop"], val).time(dt, write_precision=WritePrecision.S)
     write_api.write(bucket=BUCKET, org=ORG, record=p)
