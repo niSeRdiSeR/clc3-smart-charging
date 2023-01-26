@@ -14,7 +14,7 @@ publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
 
 def set_prop(pk, prop, val):
-    publisher.publish(topic_path, json.dumps({"pk": pk, "prop": prop, "val": val}), pk=f"{pk}")
+    publisher.publish(topic_path, json.dumps({"pk": pk, "prop": prop, "val": val}).encode('utf-8'), pk=f"{pk}")
 
 
 def handle(event, context):
