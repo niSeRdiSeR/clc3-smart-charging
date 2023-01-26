@@ -134,9 +134,35 @@ Die Replikas sind dabei nicht standardmäßig load balanced, Hochverfügbarkeit 
 Bei mehr Traffic könnte man so also auch die Datenbank entlang mit Django (und den Funktionien ohnehin) problemlos skalieren.
 
 ### InfluxDB
+Da es sich bei den erhobenen Daten letztendlich um Sensor/IoT-Daten mit konkretem/relevantem Zeitstempel handelt, macht einen Zeitreihendatenbank Sinn - Zudem Werte zwar nicht hoch-frequent, aber doch u.U. mehrfach pro Sekunde pro Client geschrieben werden. Außerdem lässt sich damit speziell in Kombination mit Grafana relativ schnell eine brauchbare Visualisierung umsetzen. 
+
 InfluxDB als Cluster kann bei Google seit kurzer Zeit nurmehr als InfluxDB Enterprise als Fully-Managed SaaS bezogen werden.
 
 Abonniert man den Service im Google-Marketplace werden automatisch in der Influx-Cloud Instanzen allokiert und dem Google-Account zugeordnet. Über SSO loggt man sich direkt bei Influx in einem Portal ein und erreicht die Schreib/Lese-API über das WWW. \
 Berechtigungstoken für Client sind somit ebenfalls über die Influx-GUI zu verwalten.
 
 ### Secrets
+Folgende Secrets werden in Googles *Secret Manager* verwaltet:
+- DB-Zugriff für Django
+- DB-Zugriff für `inverter-fetcher`
+- Influx Token zum Schreiben
+
+Zugriff auf Secrets:
+```python
+client = secretmanager.SecretManagerServiceClient()
+name = f"projects/{PROJECT_ID}/secrets/{DB_SECRET_NAME}/versions/latest"
+payload = json.loads(client.access_secret_version(name=name).payload.data.decode("utf-8"))
+```
+Wichtig ist dabei, dass der ausführende Service-Account zum Zugriff auf die jeweiligen secrets berechtigt ist (Mit wenigen Klicks in GUI machbar).
+
+### Edge-Client
+Der Edge-Client bedient sich einer [modifizierten Version](https://github.com/niSeRdiSeR/wattpilot) eines [Projekts](https://github.com/joscha82/wattpilot) aus der Community.
+
+Es handelt sich dabei um einen Wattpilot(Websocket)-Client, welcher die (nicht dokumentierte) Websocket-Kommunikation in einer interaktiven Shell abstrahiert. \
+Der Client kann auch Bridge zwischen Wattpilot und einem MQTT-Broker fungieren, was Automatisierung ermöglicht. Leider funktionierte bei mir (und auch bei anderen) zwar nur die Shell in der Ursprungsversion, in der geforkten Version habe ich diese Stelle allerdings gefixt bzw. so adaptiert, dass sie für meine Zwecke funktioniert.
+
+Diese MQTT<->Wattpilot-Bridge wird gemeinsam mit einem MQTT-Broker (mosquitto) und dem eigentlichen Edge-Client (einer MQTT<->Pub/Sub) als `docker-compose`-Stack eingestzt.
+
+**Authentifizierung** \
+Zum Authentifizieren gegen Pub/Sub kann ein JSON-Keyfile für externe Service-Accounts in der Google-Cloud-Console (GUI) erzeugt und runtergeladen werden. \
+Dieser wird vom Hostsystem in den Container gemapped und der Pfad als Environment-Variable `GOOGLE_APPLICATION_CREDENTIALS` gesetzt. In diesem Pfad suchen die Google-Libraries implizit, wenn sie verwendet werden.
