@@ -39,8 +39,8 @@ Grundsätzlich war die Idee, das System Event-getrieben aufzubauen. \
 Immer dann, wenn neue Messwerte vom Wechselrichter kommen, soll der Wattpilot den Ladevorgang entsprechend anpassen. Dazu müssen auch aktuelle Ladeinformationen, wie der aktuelle Ladestrom, vom Wattpilot zur Verfügung gestellt werden. Daraus ergeben sich folgende Event-Abläufe:
 - **Wechselrichter-Update**: \
   Da Werte aktiv von einer REST-API abgefragt werden müssen, müssen diese Fetches periodisch getriggert werden. \
-  Um den Event-getriebenen Ansatz möglichst beizubehalten, wurde dazu der `Cloud-Scheduler` eingesetzt. Mit diesem können periodisch Nachrichten an ein Topic in Google *Cloud Pub/Sub* gepusht werden, wodurch der Ablauf getriggert wird. \
-  Der `inverter-fetcher` greift daraufhin die abzufragenden Wechselrichter aus der `Cloud SQL`-DB ab und ruft dessen aktuelle Stromwerte ab. Diese werden anschließend in ein anderes Topic in Pub/Sub publiziert und in einer *InfluxDB2* gespeichert (ebenfalls in der Cloud; siehe unten). \
+  Um den Event-getriebenen Ansatz möglichst beizubehalten, wurde dazu der *Cloud Scheduler* eingesetzt. Mit diesem können periodisch Nachrichten an ein Topic in Google *Cloud Pub/Sub* gepusht werden, wodurch der Ablauf getriggert wird. \
+  Der `inverter-fetcher` greift daraufhin die abzufragenden Wechselrichter aus der *Cloud SQL*-DB ab und ruft dessen aktuelle Stromwerte ab. Diese werden anschließend in ein anderes Topic in Pub/Sub publiziert und in einer *InfluxDB2* gespeichert (ebenfalls in der Cloud; siehe unten). \
   Der `inverter-handler` (=Logik) reagiert auf diese Messwerte: Um den Ziel-Ladestrom zu berechnen, werden auch die aktuellen/letzten Werte des Wattpilots benötigt und dazu aus dem Redis-Cache geladen.
 
 - **Wattpilot-Update**: \
@@ -68,7 +68,7 @@ Man hat hierbei die Möglichkeit, zwischen zwei Varianten zu wählen:
 2. **Flexibel** \
    Hier wird die App in Docker-Containern zur Verfügung gestellt. Die Startup-Zeit wird hier in "Minuten" angegeben, was *Scale-to-Zero unmöglich* macht und auch nicht von Google unterstüzt wird.
 
-Die Standard-Variante ist in diesem Fall also, speziell für einen Prototyp, besser geeignet. Wäre man an einem Punkt, wo es Sinn machen würde, eine Instanz permanent am laufen zu halten, ist ein Umstieg leicht möglich. Die flexible Variante kann in diesem Fall bis auf den `app.yaml`-File zum Beschreiben der Infrastruktur (*IaC*) analog zur Standard-Variante eingesetzt werden.
+Die Standard-Variante ist in diesem Fall also, speziell für einen Prototyp, besser geeignet. Wäre man an einem Punkt, wo es Sinn machen würde, eine Instanz permanent am laufen zu halten, ist ein Umstieg leicht möglich. Die flexible Variante kann in diesem Fall bis auf den `app.yaml`-File zum Beschreiben der Infrastruktur (*IaC*) analog zur Standard-Variante eingesetzt werden. Mit `gcloud app deploy` wird anschließend provisioniert.
 
 Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloun Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier `Scale-to-Zero` angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
 
@@ -80,6 +80,16 @@ Sämtliche andere Implementierungen (außer natürlich der Edge-Client und die S
 Zudem sind Kriterien wie permanente Verfügbarkeit/kurze Startup-Time, Performance und dergleichen in diesem Fall irrelevant. Wichtig ist, dass die Funktion zuverlässig ausgeführt wird, was dank Pub/Sub und automatischen Retries garantiert ist. Mehrfachzustellungen sind ebenfalls unproblematisch, könnten aber auch durch einfache Konfiguration der entsprechenden Pub/Sub-Subscription unkompliziert vermieden werden.
 
 Authentifizierung oder Netzwerkkonfiguration sind im Google-Umfeld in diesem Setup zu vernachlässigen, da in einem Projekt ohnehin ein Default-Netzwerk angelegt wird und die Funktionen durch deren Service-Account auch authentifiziert sind. Es ist allerdings nötig, diesem Service-Account dazu die nötigen Berechtigungen zu geben. Verwendet man für mehrere/alle Functions denselben Service-Account, ist das eine einmalige Angelegenheit.
+
+Das Deployment lässt sich aufgrund der Simplizität meines Erachtens nach flexibel und dennoch einfach mit der `gcloud`-CLI umsetzten - vor allem wenn alleine entwickelt wird:
+```
+gcloud functions deploy inverter-fetcher \
+--region=europe-west3 \
+--runtime=python310 \
+--source=. \
+--entry-point=handle \
+--trigger-topic=inverter-fetches
+```
 
 ### Messaging
 Wie bereits erwähnt, wird als Messaging-Dienst Googles *Pub/Sub* verwendet, welcher asynchrone Message/Event-Zustellung durch das bekannte und namensgebende Publish/Subscribe-Pattern ermöglicht.
@@ -114,6 +124,19 @@ else:
     subscriber.create_subscription(request={"name": subscription_name, "topic": sub_topic_name, "filter": f'attributes.pk = "{WP_PK}"'})
 future = subscriber.subscribe(subscription_name, sub_msg_handler)
 ```
+
+### Cloud SQL
+Als Datenbank wird Postgres in einer Single-Instanz ohne Hochverfügbarkeit und Replicas verwendet - Um Kosten zu sparen.
+
+In der Google-Cloud können einfache Lese-Replikas und Hochverfügbarkeit mit einem Klick aktiviert werden. In Folge sind nur Zone und VM zu konfigurieren. \
+Die Replikas sind dabei nicht standardmäßig load balanced, Hochverfügbarkeit bringt diese Eigenschaft hingegen (natürlich) schon mit.
+
+Bei mehr Traffic könnte man so also auch die Datenbank entlang mit Django (und den Funktionien ohnehin) problemlos skalieren.
+
 ### InfluxDB
+InfluxDB als Cluster kann bei Google seit kurzer Zeit nurmehr als InfluxDB Enterprise als Fully-Managed SaaS bezogen werden.
+
+Abonniert man den Service im Google-Marketplace werden automatisch in der Influx-Cloud Instanzen allokiert und dem Google-Account zugeordnet. Über SSO loggt man sich direkt bei Influx in einem Portal ein und erreicht die Schreib/Lese-API über das WWW. \
+Berechtigungstoken für Client sind somit ebenfalls über die Influx-GUI zu verwalten.
 
 ### Secrets
