@@ -29,7 +29,9 @@ Es soll dabei natürlich auch möglich sein, diese Logik zu unterbrechen und vol
 ## Lösung
 ### Architektur
 ![Architektur](./doc/architecture.png)
+#### Django
+Django soll als Management/Konfigurations-Möglichkeit dienen. Praktisch ist dabei der integrierte OR-Mapper und vor allem auch eine integrierte Admin-GUI, welche einfache Administration Out-of-the-Box ermöglicht. \
+Dabei wird 
 ### Messaging
-### Django-Instanz(en)
 ### Functions
 ### InfluxDB
