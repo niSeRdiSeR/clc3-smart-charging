@@ -70,6 +70,32 @@ Man hat hierbei die Möglichkeit, zwischen zwei Varianten zu wählen:
 
 Die Standard-Variante ist in diesem Fall also, speziell für einen Prototyp, besser geeignet. Wäre man an einem Punkt, wo es Sinn machen würde, eine Instanz permanent am laufen zu halten, ist ein Umstieg leicht möglich. Die flexible Variante kann in diesem Fall bis auf den `app.yaml`-File zum Beschreiben der Infrastruktur (*IaC*) analog zur Standard-Variante eingesetzt werden. Mit `gcloud app deploy` wird anschließend provisioniert.
 
+`app.yaml`:
+
+```yaml
+runtime: python310
+service: django
+
+env_variables:
+  APPENGINE_URL: django-dot-clc3-375021.ey.r.appspot.com
+  WATTPILOT_TOPIC: wattpilot-config
+  INVERTER_TOPIC: inverter-config
+
+handlers:
+# konfiguriert Route für Static Files im Cloud Storage
+- url: /static
+  static_dir: static/
+
+# This handler routes all requests not caught above to your main app. It is
+# required when static routes are defined, but can be omitted (along with
+# the entire handlers section) when there are no static files defined.
+- url: /.*
+  script: auto
+```
+Die Route(n) für Static Files müssen wie oben gezeigt definiert werden, damit diese aus dem Cloud Storage der App Engine bereitgestellt werden. Definiert man Static-File-Routen, muss auch (wie gezeigt) der letzte Eintrag hinzugefügt werden.
+
+*Alternative*
+
 Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloud Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier *Scale-to-Zero* angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
 
 Google stellt zu diesem Thema sogar spezifisch für Django [Anleitungen](https://cloud.google.com/python/django/appengine) bereit. Hier wird zum Beispiel auch erklärt, wie man eine Datenbankverbindung mit *Cloud SQL* herstellen kann - Sowohl für den Produktiveinsatz, als auch mittels Proxy-Applikation zum lokalen Entwickeln und Migrieren.
