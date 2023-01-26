@@ -16,7 +16,6 @@ publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
 
 def set_prop(pk, prop, val):
-    print("sending...")
     data = json.dumps({"pk": pk, "prop": prop, "val": val})
     publisher.publish(topic_path, data.encode('utf-8'), pk=f"{pk}")
     print(f"sent: {data.encode('utf-8')}")
@@ -39,8 +38,6 @@ def handle(event, context):
     if message_json['wp_pk'] is None:
         del message_json['wp_pk']
         r.hdel(f"inv-{pk}")
-    #r.hset(f"inv-{pk}", mapping=message_json)
-    #print(r.hgetall(f"inv-{pk}"))
 
     wp_pk = message_json.get('wp_pk', None)
     smart_charging_enabled = message_json.get('smart_charging_enabled', None)
