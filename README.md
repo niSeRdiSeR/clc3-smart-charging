@@ -70,7 +70,7 @@ Man hat hierbei die Möglichkeit, zwischen zwei Varianten zu wählen:
 
 Die Standard-Variante ist in diesem Fall also, speziell für einen Prototyp, besser geeignet. Wäre man an einem Punkt, wo es Sinn machen würde, eine Instanz permanent am laufen zu halten, ist ein Umstieg leicht möglich. Die flexible Variante kann in diesem Fall bis auf den `app.yaml`-File zum Beschreiben der Infrastruktur (*IaC*) analog zur Standard-Variante eingesetzt werden. Mit `gcloud app deploy` wird anschließend provisioniert.
 
-Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloun Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier `Scale-to-Zero` angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
+Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloun Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier *Scale-to-Zero* angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
 
 Google stellt zu diesem Thema sogar spezifisch für Django [Anleitungen](https://cloud.google.com/python/django/appengine) bereit. Hier wird zum Beispiel auch erklärt, wie man eine Datenbankverbindung mit *Cloud SQL* herstellen kann - Sowohl für den Produktiveinsatz, als auch mittels Proxy-Applikation zum lokalen Entwickeln und Migrieren.
 
