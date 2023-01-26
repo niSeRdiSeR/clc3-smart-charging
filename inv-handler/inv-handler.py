@@ -14,7 +14,7 @@ C_233 = 233.333333
 publisher = pubsub_v1.PublisherClient()
 
 def set_prop(pk, prop, val):
-    publisher.publish(TOPIC_PATH, json.dumps({"pk": wp_pk, "prop": prop:, "val": val}), pk=f"{wp_pk}")
+    publisher.publish(TOPIC_PATH, json.dumps({"pk": pk, "prop": prop, "val": val}), pk=f"{pk}")
 
 
 def handle(event, context):
