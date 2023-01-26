@@ -8,13 +8,13 @@ from google.cloud import pubsub_v1
 PROJECT_ID = os.getenv('GCLOUD_PROJECT')
 TARGET_TOPIC = os.getenv('TARGET_TOPIC')
 REDIS_HOST = os.getenv('REDIS_HOST')
-TOPIC_PATH = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
 C_233 = 233.333333
 
 publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(PROJECT_ID, TARGET_TOPIC)
 
 def set_prop(pk, prop, val):
-    publisher.publish(TOPIC_PATH, json.dumps({"pk": pk, "prop": prop, "val": val}), pk=f"{pk}")
+    publisher.publish(topic_path, json.dumps({"pk": pk, "prop": prop, "val": val}), pk=f"{pk}")
 
 
 def handle(event, context):
@@ -52,7 +52,10 @@ def handle(event, context):
             # logic processing
             print("sc enabled, applying logic")
             delta_kw = message_json['production'] - message_json['consumption']
-            nrg_total_w = int(r.hget(f"wp-{wp_pk}", "nrg_total"))
+            try:
+                nrg_total_w = float(r.hget(f"wp-{wp_pk}", "nrg_ptotal"))
+            except:
+                nrg_total_w = 0 # assuming 0 power if no cache entry
             target_kw = nrg_total_w / 1000 + delta_kw if nrg_total_w else delta_kw
             if target_kw < 1:
                 # switch off WP

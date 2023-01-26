@@ -35,7 +35,6 @@ def handle(event, context):
 
     # redis
     r.hset(f"wp-{pk}", message_json["prop"], message_json["val"])
-    r.hset(f"wp-{pk}", message_json["prop"], message_json["val"])
 
     # influx
     client = secretmanager.SecretManagerServiceClient()
