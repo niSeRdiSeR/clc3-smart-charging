@@ -166,3 +166,30 @@ Diese MQTT<->Wattpilot-Bridge wird gemeinsam mit einem MQTT-Broker (mosquitto) u
 **Authentifizierung** \
 Zum Authentifizieren gegen Pub/Sub kann ein JSON-Keyfile für externe Service-Accounts in der Google-Cloud-Console (GUI) erzeugt und runtergeladen werden. \
 Dieser wird vom Hostsystem in den Container gemapped und der Pfad als Environment-Variable `GOOGLE_APPLICATION_CREDENTIALS` gesetzt. In diesem Pfad suchen die Google-Libraries implizit, wenn sie verwendet werden.
+
+### Kosten/CO2
+Damit sich die Ausführung dieses Systems ökonomisch (und hoffentlich auch ökologisch) rentiert, war ein wichtiger Punkt auch die Kosten so gering wie möglich zu halten. GCP bietet auch die Möglicheit, den CO2-Ausstoß zu betrachten, allerdings immer nur von vollendeten Monaten, weshalb dazu leider keine Statistiken vorhanden sind. Nimmt man aber an, dass Kosten und CO2-Ausstoß korrelieren, geben die Kosten vielleicht zumindest auch einen Eindruck der CO2-Bilanz.
+
+#### Rechenzeit
+**Functions:**
+- < 2 Mio. Aufrufe  -> gratis
+- ab 2 Mio.         -> 0,40$/1.Mio. Aufrufe
+
+**App Engine:** \
+Verschiedene Tiers mit stark unterschiedlichen Stundenpreisen von ~0.05-0.35$/h.
+
+Es gibt dabei auch ein Gratiskontingent an Instanzzeit der schwächeren Tiers. Dieses ist mit 28h an *F*-Instanzen und 9h and *B*-Instanzen zwar rechenschwach, aber würde für dieses Projekt voraussichtlich gänzlich kostenlosen Betrieb der Django-Instanz(en) bedeuten.
+
+Aktuell fallen somit insgesamt keine Kosten für die Rechenzeit an.
+
+#### Traffic
+Preistreibend ist in diesem Projekt der Traffic der durch Pub/Sub erzeugt wird, vor allem dann wenn er auch die Google-Cloud verlässt und zum Edge-Client geht. Doch auch hier sind die Preise mit 40$ pro TiB Traffic human, wobei sich dieser Preis bei ausgehendem Traffic aus der Cloud um 0.02$ pro GB in Europa erhöht. Die ersten 10GB sind gratis. 
+
+Eine aus Kostensicht interessante Alternative (die ich leider zu spät entdeckt habe), ist *Pub/Sub-Lite*, welches im Grunde dasselbe macht, allerdings standardmäßig nicht geo-repliziert (was beim normalen Pub/Sub der Fall ist). Nachteil ist, ist dass Pub/Sub-Lite bzw. dessen Kapazitäten manuell im Vorhinein konfiguriert werden müssen. \
+Das kann zu ungenützten, bezahlten Ressourcen führen, bewahrt aber auch vor potenziellen Überraschungen.
+
+#### Datenbanken
+Am teuerten kommen die Datenbanken. Cloud SQL kostet auch in der schächsten Konfiguration knappe 40$ im Monat für 1 vCore, 3.75GB RAM und 10GB HDD. Da die Daten aber auch in der Cloud bleiben, ist hier mit relativ stabilen Kosten zu rechnen.
+
+Die Kosten der Influx-Cloud hingegegen sind schwer vorherzusagen, da seitens Google aufgrund externer Cloud Statistiken fehlen und Influx diese nicht zur Verfügung stellt und für Information auf Google verweist. Hier findet man zumindest die Tarife: \
+Das Speichern in der Influx-DB kostet umgerechnet laut Google pro GB über 1.80€, Abfragen hingegen nur etwa 0.08€ pro GB. Es dürfte sich hier vermutlich um einen Einheitenfehler handeln, allerdings wird erst zum Monatsende abgerechnet.
