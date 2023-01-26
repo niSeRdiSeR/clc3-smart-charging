@@ -28,6 +28,7 @@ Es soll dabei natürlich auch möglich sein, diese Logik zu unterbrechen und vol
 
 ## Lösung
 ### Architektur
+![Architektur](./doc/architecture.png)
 ### Messaging
 ### Django-Instanz(en)
 ### Functions
