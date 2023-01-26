@@ -12,7 +12,7 @@ Zwar existieren bei den meisten Herstellern proprietäre Systemlösungen um den
 PV-Überschuss möglichst intelligent einzusetzen, diese erfordern allerdings natürlich
 auch, dass sämtliche verwendete Geräte desselben Herstellers (oft auch in der
 passenden Revision) vorhanden sind. Dies führt in der Praxis zu mehreren
-Einschränkungen, sodass es ohne eigener Lösung meistens Zwangsläufig zu einer
+Einschränkungen, sodass es ohne eigener Lösung meistens zwangsläufig zu einer
 Kompromissentscheidung beim Kauf der benutzten Geräte kommt, da speziell bei
 PV-Anlagen auch deren Features stark vom Hersteller abhängig und somit teils
 extrem unterschiedlich geeignet sind.
@@ -70,7 +70,7 @@ Man hat hierbei die Möglichkeit, zwischen zwei Varianten zu wählen:
 
 Die Standard-Variante ist in diesem Fall also, speziell für einen Prototyp, besser geeignet. Wäre man an einem Punkt, wo es Sinn machen würde, eine Instanz permanent am laufen zu halten, ist ein Umstieg leicht möglich. Die flexible Variante kann in diesem Fall bis auf den `app.yaml`-File zum Beschreiben der Infrastruktur (*IaC*) analog zur Standard-Variante eingesetzt werden. Mit `gcloud app deploy` wird anschließend provisioniert.
 
-Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloun Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier *Scale-to-Zero* angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
+Eine alternative Lösung mit ähnlichen Vorteilen wäre auch der Einsatz von *Cloud Run*. In diesem Fall müssen Container-Images zwar vom User selbst erstellt bzw. beschrieben werden, allerdings ist das Start-Verhalten hier laut Google schnell genug, sodass auch hier *Scale-to-Zero* angewandt wird. Hier würde dieser Ansatz allerdings effektiv nur mehr Overhead in Form eines Dockerfiles o.ä. bewirken. 
 
 Google stellt zu diesem Thema sogar spezifisch für Django [Anleitungen](https://cloud.google.com/python/django/appengine) bereit. Hier wird zum Beispiel auch erklärt, wie man eine Datenbankverbindung mit *Cloud SQL* herstellen kann - Sowohl für den Produktiveinsatz, als auch mittels Proxy-Applikation zum lokalen Entwickeln und Migrieren.
 
@@ -134,7 +134,7 @@ Die Replikas sind dabei nicht standardmäßig load balanced, Hochverfügbarkeit 
 Bei mehr Traffic könnte man so also auch die Datenbank entlang mit Django (und den Funktionien ohnehin) problemlos skalieren.
 
 ### InfluxDB
-Da es sich bei den erhobenen Daten letztendlich um Sensor/IoT-Daten mit konkretem/relevantem Zeitstempel handelt, macht einen Zeitreihendatenbank Sinn - Zudem Werte zwar nicht hoch-frequent, aber doch u.U. mehrfach pro Sekunde pro Client geschrieben werden. Außerdem lässt sich damit speziell in Kombination mit Grafana relativ schnell eine brauchbare Visualisierung umsetzen. 
+Da es sich bei den erhobenen Daten letztendlich um Sensor/IoT-Daten mit konkretem/relevantem Zeitstempel handelt, macht eine Zeitreihendatenbank Sinn - Zudem Werte zwar nicht hoch-frequent, aber doch u.U. mehrfach pro Sekunde pro Client geschrieben werden. Außerdem lässt sich damit speziell in Kombination mit Grafana relativ schnell eine brauchbare Visualisierung umsetzen. 
 
 InfluxDB als Cluster kann bei Google seit kurzer Zeit nurmehr als InfluxDB Enterprise als Fully-Managed SaaS bezogen werden.
 
@@ -159,16 +159,16 @@ Wichtig ist dabei, dass der ausführende Service-Account zum Zugriff auf die jew
 Der Edge-Client bedient sich einer [modifizierten Version](https://github.com/niSeRdiSeR/wattpilot) eines [Projekts](https://github.com/joscha82/wattpilot) aus der Community.
 
 Es handelt sich dabei um einen Wattpilot(Websocket)-Client, welcher die (nicht dokumentierte) Websocket-Kommunikation in einer interaktiven Shell abstrahiert. \
-Der Client kann auch Bridge zwischen Wattpilot und einem MQTT-Broker fungieren, was Automatisierung ermöglicht. Leider funktionierte bei mir (und auch bei anderen) zwar nur die Shell in der Ursprungsversion, in der geforkten Version habe ich diese Stelle allerdings gefixt bzw. so adaptiert, dass sie für meine Zwecke funktioniert.
+Der Client kann auch als Bridge zwischen Wattpilot und einem MQTT-Broker fungieren, was automatisierte Steuerung ermöglicht. Leider funktionierte bei mir (und auch bei anderen) zwar nur die Shell in der Ursprungsversion, in der geforkten Version habe ich diese Stelle allerdings gefixt bzw. so adaptiert, dass sie für meine Zwecke funktioniert.
 
-Diese MQTT<->Wattpilot-Bridge wird gemeinsam mit einem MQTT-Broker (mosquitto) und dem eigentlichen Edge-Client (einer MQTT<->Pub/Sub) als `docker-compose`-Stack eingestzt.
+Diese MQTT<->Wattpilot-Bridge wird gemeinsam mit einem MQTT-Broker (mosquitto) und dem eigentlichen Edge-Client (einer weiteren MQTT<->Pub/Sub Bridge) als `docker-compose`-Stack eingestzt.
 
 **Authentifizierung** \
 Zum Authentifizieren gegen Pub/Sub kann ein JSON-Keyfile für externe Service-Accounts in der Google-Cloud-Console (GUI) erzeugt und runtergeladen werden. \
 Dieser wird vom Hostsystem in den Container gemapped und der Pfad als Environment-Variable `GOOGLE_APPLICATION_CREDENTIALS` gesetzt. In diesem Pfad suchen die Google-Libraries implizit, wenn sie verwendet werden.
 
 ### Kosten/CO2
-Damit sich die Ausführung dieses Systems ökonomisch (und hoffentlich auch ökologisch) rentiert, war ein wichtiger Punkt auch die Kosten so gering wie möglich zu halten. GCP bietet auch die Möglicheit, den CO2-Ausstoß zu betrachten, allerdings immer nur von vollendeten Monaten, weshalb dazu leider keine Statistiken vorhanden sind. Nimmt man aber an, dass Kosten und CO2-Ausstoß korrelieren, geben die Kosten vielleicht zumindest auch einen Eindruck der CO2-Bilanz.
+Damit sich die Ausführung dieses Systems ökonomisch (und hoffentlich auch ökologisch) rentiert, war ein wichtiger Punkt auch die Kosten so gering wie möglich zu halten. GCP bietet auch die Möglicheit, den CO2-Ausstoß zu betrachten, allerdings immer nur von vollendeten Monaten, weshalb dazu leider keine Statistiken vorhanden sind.
 
 #### Rechenzeit
 **Functions:**
@@ -185,11 +185,13 @@ Aktuell fallen somit insgesamt keine Kosten für die Rechenzeit an.
 #### Traffic
 Preistreibend ist in diesem Projekt der Traffic der durch Pub/Sub erzeugt wird, vor allem dann wenn er auch die Google-Cloud verlässt und zum Edge-Client geht. Doch auch hier sind die Preise mit 40$ pro TiB Traffic human, wobei sich dieser Preis bei ausgehendem Traffic aus der Cloud um 0.02$ pro GB in Europa erhöht. Die ersten 10GB sind gratis. 
 
-Eine aus Kostensicht interessante Alternative (die ich leider zu spät entdeckt habe), ist *Pub/Sub-Lite*, welches im Grunde dasselbe macht, allerdings standardmäßig nicht geo-repliziert (was beim normalen Pub/Sub der Fall ist). Nachteil ist, ist dass Pub/Sub-Lite bzw. dessen Kapazitäten manuell im Vorhinein konfiguriert werden müssen. \
+Eine aus Kostensicht interessante Alternative (die ich leider zu spät entdeckt habe), ist *Pub/Sub-Lite*, welches im Grunde dasselbe macht, allerdings standardmäßig nicht geo-repliziert (was beim normalen Pub/Sub der Fall ist). Nachteil ist, dass Pub/Sub-Lite bzw. dessen Kapazitäten manuell im Vorhinein konfiguriert werden müssen. \
 Das kann zu ungenützten, bezahlten Ressourcen führen, bewahrt aber auch vor potenziellen Überraschungen.
 
 #### Datenbanken
-Am teuerten kommen die Datenbanken. Cloud SQL kostet auch in der schächsten Konfiguration knappe 40$ im Monat für 1 vCore, 3.75GB RAM und 10GB HDD. Da die Daten aber auch in der Cloud bleiben, ist hier mit relativ stabilen Kosten zu rechnen.
+Am teuerten kommen die Datenbanken. Cloud SQL kostet auch in der beinahe schwächsten Konfiguration mit PostgreSQL knappe 40$ im Monat für 1 vCore, 3.75GB RAM und 10GB SDD. Da die Daten aber auch in der Cloud bleiben, ist hier mit relativ stabilen Kosten zu rechnen.
 
-Die Kosten der Influx-Cloud hingegegen sind schwer vorherzusagen, da seitens Google aufgrund externer Cloud Statistiken fehlen und Influx diese nicht zur Verfügung stellt und für Information auf Google verweist. Hier findet man zumindest die Tarife: \
-Das Speichern in der Influx-DB kostet umgerechnet laut Google pro GB über 1.80€, Abfragen hingegen nur etwa 0.08€ pro GB. Es dürfte sich hier vermutlich um einen Einheitenfehler handeln, allerdings wird erst zum Monatsende abgerechnet.
+Die Kosten der Influx-Cloud hingegegen sind schwer vorherzusagen, da seitens Google aufgrund externer Cloud Statistiken fehlen und Influx diese nicht zur Verfügung stellt, sondern für Information auf Google verweist. Hier findet man zumindest die Tarife: \
+Das Speichern in der Influx-DB kostet umgerechnet laut Google pro GB über 1.80€, Abfragen hingegen nur etwa 0.08€ pro GB. Es dürfte sich hier vermutlich um einen Einheitenfehler handeln, allerdings wird erst zum Monatsende abgerechnet, wodurch sich hier keine zuverlässigen Aussagen treffen lassen.
+
+Letztendlich kann man aber sagen, dass die Cloud-Lösung in dieser Form aus Kosten/Nutzen-Sicht für eine einzelne PV-Anlage mit Ladegerät scheitert. Diese Mehrkosten gegenüber eigener Hardware und Stromkosten kommen allerdings durch die Unterstützung für mehrere Clients und dem "Luxus" des Monitoring via Influx zustande. Würde man mehrere Clients bedienen und statt normalen Servern/PCs z.B. einen Raspberry Edge-seitig einsetzen, könnte sich der Ansatz allerdings mit einigen Usern amortisieren.
