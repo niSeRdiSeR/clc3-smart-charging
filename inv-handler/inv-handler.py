@@ -14,7 +14,7 @@ C_233 = 233.333333
 publisher = pubsub_v1.PublisherClient()
 
 def set_prop(pk, prop, val):
-    publisher.publish(TOPIC_PATH, json.dumps({"pk": wp_pk, "prop": prop:, "val": val}))
+    publisher.publish(TOPIC_PATH, json.dumps({"pk": wp_pk, "prop": prop:, "val": val}), pk=f"{wp_pk}")
 
 
 def handle(event, context):
@@ -40,7 +40,7 @@ def handle(event, context):
     wp_pk = message_json.get('wp_pk', None)
     smart_charging_enabled = message_json.get('smart_charging_enabled', None)
 
-    if wp_pk:
+    if wp_pk and wp_pk >= 0:
         print("====================")
         print(f"found reg. wp {wp_pk}")
         # create link in wp hashdict

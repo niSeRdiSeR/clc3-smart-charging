@@ -68,20 +68,18 @@ def handle(event, context):
     
     engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@/{DB_NAME}?host=/cloudsql/{DB_INSTANCE_CONN_NAME}')
     with engine.connect() as conn:
-        rows = conn.execute('SELECT id, token, site_id FROM management_inverter')
+        rows = conn.execute('SELECT id, token, site_id, wattpilot_id, smart_charging_enabled FROM management_inverter')
         for row in rows:
             pk = row[0]
             token = row[1]
             site_id = row[2]
-            wp_rows = conn.execute(f'SELECT id, smart_charging_enabled FROM management_wattpilot WHERE inverter_id={pk}')
-            entry = wp_rows.fetchone() if wp_rows.rowcount > 0 else None
-            wp_pk = entry[0] if entry else None
-            smart_charging_enabled = entry[1] if entry else None
+            wp_pk = row[3]
+            smart_charging_enabled = row[4]
             try:
                 prod, cons, from_grid = fetch_powerflow(site_id, token)
                 publisher.publish(topic_path, json.dumps({"pk": pk, "wp_pk": wp_pk, "smart_charging_enabled": smart_charging_enabled, "production": prod, "consumption": cons, "from_grid": from_grid}).encode('utf-8'))
                 # write to influx
-                p = influxdb_client.Point("inverter_updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
+                p = influxdb_client.Point("inverter-updates").tag("inverter", pk).field("production", prod).field("consumption", cons).field("from_grid", from_grid).time(datetime.utcnow(), write_precision=WritePrecision.S)
                 write_api.write(bucket=BUCKET, org=ORG, record=p)
             except:
                 print(f"error fetching: {pk}, {site_id}")            
