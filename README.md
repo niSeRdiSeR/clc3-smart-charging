@@ -167,6 +167,10 @@ InfluxDB als Cluster kann bei Google seit kurzer Zeit nurmehr als InfluxDB Enter
 Abonniert man den Service im Google-Marketplace werden automatisch in der Influx-Cloud Instanzen allokiert und dem Google-Account zugeordnet. Über SSO loggt man sich direkt bei Influx in einem Portal ein und erreicht die Schreib/Lese-API über das WWW. \
 Berechtigungstoken für Client sind somit ebenfalls über die Influx-GUI zu verwalten.
 
+### Redis
+Redis kann zwar wie auch InfluxDB als Fully-Managed SaaS abonniert werden, allerdings scheiterte ich dabei beim Einrichten eines Kontos auf Redis (vermutlich wegen des Testzeitraumes). Für den Prototyp macht es aber kaum Unterschied, da auch ein "klassischer" Redis *Cloud Memorystore* einfach aufgesetzt ist. Hier muss RAM/Speicherplatz allerdings manuell vergeben werden. \
+Aber auch hier können dank der Memorystore-Abstraktion Replikation und Hochverfügbarkeit mit wenigen Klicks aktiviert werden.
+
 ### Secrets
 Folgende Secrets werden in Googles *Secret Manager* verwaltet:
 - DB-Zugriff für Django
@@ -214,8 +218,8 @@ Preistreibend ist in diesem Projekt der Traffic der durch Pub/Sub erzeugt wird, 
 Eine aus Kostensicht interessante Alternative (die ich leider zu spät entdeckt habe), ist *Pub/Sub-Lite*, welches im Grunde dasselbe macht, allerdings standardmäßig nicht geo-repliziert (was beim normalen Pub/Sub der Fall ist). Nachteil ist, dass Pub/Sub-Lite bzw. dessen Kapazitäten manuell im Vorhinein konfiguriert werden müssen. \
 Das kann zu ungenützten, bezahlten Ressourcen führen, bewahrt aber auch vor potenziellen Überraschungen.
 
-#### Datenbanken
-Am teuerten kommen die Datenbanken. Cloud SQL kostet auch in der beinahe schwächsten Konfiguration mit PostgreSQL knappe 40$ im Monat für 1 vCore, 3.75GB RAM und 10GB SDD. Da die Daten aber auch in der Cloud bleiben, ist hier mit relativ stabilen Kosten zu rechnen.
+#### Datenbanken und Cache
+Am teuersten kommen die Datenbanken und der Memorystore. Cloud SQL kostet auch in der beinahe schwächsten Konfiguration mit PostgreSQL knappe 40$ im Monat für 1 vCore, 3.75GB RAM und 10GB SDD. Da die Daten aber auch in der Cloud bleiben, ist hier mit relativ stabilen Kosten zu rechnen. Ähnliche Kosten verursacht bereits der Redis-Cache in einfachster Ausführung mit 1GB.
 
 Die Kosten der Influx-Cloud hingegegen sind schwer vorherzusagen, da seitens Google aufgrund externer Cloud Statistiken fehlen und Influx diese nicht zur Verfügung stellt, sondern für Information auf Google verweist. Hier findet man zumindest die Tarife: \
 Das Speichern in der Influx-DB kostet umgerechnet laut Google pro GB über 1.80€, Abfragen hingegen nur etwa 0.08€ pro GB. Es dürfte sich hier vermutlich um einen Einheitenfehler handeln, allerdings wird erst zum Monatsende abgerechnet, wodurch sich hier keine zuverlässigen Aussagen treffen lassen.
